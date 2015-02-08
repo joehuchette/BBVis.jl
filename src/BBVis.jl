@@ -2,7 +2,7 @@ module BBVis
 
 using JuMP, MathProgBase, CPLEX, Gurobi, Gadfly
 
-export NodeData, record_node_data
+export NodeData, record_node_data, plot_mip_gap, plot_mip_gaps
 
 const sampling_rate = 100
 
@@ -26,7 +26,6 @@ function get_node_callback_setter(model::JuMP.Model, solver::CPLEX.CplexSolver)
         has_incumbent   = CPLEX.cbgetfeasibility(cb)
         incumbent_value = MathProgBase.cbgetobj(cb)
         bestbound       = MathProgBase.cbgetbestbound(cb)
-        println(NodeData(nodes_explored, incumbent_value, bestbound))
         push!(node_data, NodeData(nodes_explored,
                                   has_incumbent == 1 ? incumbent_value : NaN,
                                   bestbound))
@@ -45,7 +44,17 @@ function plot_mip_gap(model::JuMP.Model)
     nodes = model.ext[:bbvis]
     Gadfly.plot(layer(x=[n.node for n in nodes], y=[n.incumbent_value for n in nodes], Geom.line),
                 layer(x=[n.node for n in nodes], y=[n.bestbound       for n in nodes], Geom.line),
-                Guide.xlabel("Node number"), Guide.ylabel(""))
+                Guide.xlabel("Node number"), Guide.ylabel(""), Stat.step)
+end
+
+function plot_mip_gaps(models::JuMP.Model...)
+    layers = []
+    for (it,model) in enumerate(models)
+        nodes = model.ext[:bbvis]
+        append!(layers, [layer(x=[n.node for n in nodes], y=[n.incumbent_value for n in nodes], color=["Model $it"], Stat.step, Geom.line),
+                         layer(x=[n.node for n in nodes], y=[n.bestbound       for n in nodes], color=["Model $it"], Stat.step, Geom.line)])
+    end
+    return plot(layers..., Guide.xlabel("Node number"), Guide.ylabel(""), Stat.step)
 end
 
 end
