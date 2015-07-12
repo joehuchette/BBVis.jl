@@ -3,7 +3,7 @@ module BBVis
 using JuMP, MathProgBase, CPLEX, Gurobi, Gadfly
 
 export NodeData, BBData, record_node_data,
-       plot_mip_gap, plot_mip_gaps, plot_progress
+       plot_mip_gap, plot_mip_gaps, plot_mip_gaps_compat, plot_progress
 
 const sampling_rate = 100
 
@@ -75,6 +75,23 @@ function plot_progress(models::JuMP.Model...)
     end
     return vstack(plot(time_layers..., Guide.xlabel("Time (s)"),    Guide.ylabel(""), Stat.step),
                   plot(node_layers..., Guide.xlabel("Node number"), Guide.ylabel(""), Stat.step))
+end
+
+function plot_mip_gaps_compat(models::JuMP.Model...)
+    max_nodes = 0
+    for model in models
+        max_nodes = max(max_nodes, length(model.ext[:bbvis].nodes))
+    end
+    plots = []
+    for (it,model) in enumerate(models)
+        nodes = model.ext[:bbvis].nodes
+        name  = model.ext[:bbvis].name
+        p = plot(layer(x=[n.node for n in nodes], y=[n.incumbent_value for n in nodes], Stat.step, Geom.line),
+                 layer(x=[n.node for n in nodes], y=[n.bestbound       for n in nodes], Stat.step, Geom.line),
+                 Guide.xlabel("Node number"), Guide.ylabel(""), Stat.step, Scale.x_continuous(maxvalue=max_nodes))
+        push!(plots, p)
+    end
+    vstack(plots...)
 end
 
 end
