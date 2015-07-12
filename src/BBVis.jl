@@ -47,7 +47,7 @@ function plot_mip_gap(model::JuMP.Model)
 end
 
 function plot_mip_gaps(models::JuMP.Model...)
-    layers = []
+    layers = Any[]
     for (it,model) in enumerate(models)
         nodes = model.ext[:bbvis].nodes
         name  = model.ext[:bbvis].name
@@ -58,7 +58,7 @@ function plot_mip_gaps(models::JuMP.Model...)
 end
 
 function plot_progress(models::JuMP.Model...)
-    node_layers = []
+    node_layers = Any[]
     for (it,model) in enumerate(models)
         nodes = model.ext[:bbvis].nodes
         name  = model.ext[:bbvis].name
@@ -66,7 +66,7 @@ function plot_progress(models::JuMP.Model...)
                               layer(x=[n.node for n in nodes], y=[n.bestbound       for n in nodes], color=[name], Stat.step, Geom.line)])
     end
 
-    time_layers = []
+    time_layers = Any[]
     for (it,model) in enumerate(models)
         nodes = model.ext[:bbvis].nodes
         name  = model.ext[:bbvis].name
