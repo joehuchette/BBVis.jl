@@ -5,7 +5,7 @@ using JuMP, MathProgBase, CPLEX, Gurobi, Gadfly
 export NodeData, BBData, record_node_data,
        plot_mip_gap, plot_mip_gaps, plot_mip_gaps_compat, plot_times_compat, plot_progress
 
-const sampling_rate = 100
+const sampling_rate = 10
 
 immutable NodeData
     node::Int
@@ -49,10 +49,11 @@ end
 function plot_mip_gaps(models::JuMP.Model...)
     layers = Any[]
     for (it,model) in enumerate(models)
-        nodes = model.ext[:bbvis].nodes
-        name  = model.ext[:bbvis].name
-        append!(layers, [layer(x=[n.node for n in nodes], y=[n.incumbent_value for n in nodes], color=[name], Stat.step, Geom.line),
-                         layer(x=[n.node for n in nodes], y=[n.bestbound       for n in nodes], color=[name], Stat.step, Geom.line)])
+        _nodes = model.ext[:bbvis].nodes
+        nodes = filter(x -> !isnan(x.incumbent_value), _nodes)
+        name  = fill(model.ext[:bbvis].name, length(nodes))
+        append!(layers, [layer(x=[n.node for n in nodes], y=[n.incumbent_value for n in nodes], color=[name], Geom.line, Stat.step),
+                         layer(x=[n.node for n in nodes], y=[n.bestbound       for n in nodes], color=[name], Geom.line, Stat.step)])
     end
     return plot(layers..., Guide.xlabel("Node number"), Guide.ylabel(""), Stat.step)
 end
@@ -61,7 +62,7 @@ function plot_progress(models::JuMP.Model...)
     node_layers = Any[]
     for (it,model) in enumerate(models)
         nodes = model.ext[:bbvis].nodes
-        name  = model.ext[:bbvis].name
+        name  = fill(model.ext[:bbvis].name, length(nodes))
         append!(node_layers, [layer(x=[n.node for n in nodes], y=[n.incumbent_value for n in nodes], color=[name], Stat.step, Geom.line),
                               layer(x=[n.node for n in nodes], y=[n.bestbound       for n in nodes], color=[name], Stat.step, Geom.line)])
     end
@@ -69,7 +70,7 @@ function plot_progress(models::JuMP.Model...)
     time_layers = Any[]
     for (it,model) in enumerate(models)
         nodes = model.ext[:bbvis].nodes
-        name  = model.ext[:bbvis].name
+        name  = fill(model.ext[:bbvis].name, length(nodes))
         append!(time_layers, [layer(x=[n.time for n in nodes], y=[n.incumbent_value for n in nodes], color=[name], Stat.step, Geom.line),
                               layer(x=[n.time for n in nodes], y=[n.bestbound       for n in nodes], color=[name], Stat.step, Geom.line)])
     end
