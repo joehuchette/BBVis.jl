@@ -53,10 +53,9 @@ function plot_mip_gaps(models::JuMP.Model...)
     for (it,model) in enumerate(models)
         _nodes = model.ext[:bbvis].nodes
         nodes = filter(x -> !isnan(x.incumbent_value), _nodes)
-        # _name = fill(model.ext[:bbvis].name, length(_nodes))
         name  = fill(model.ext[:bbvis].name, length(nodes))
-        append!(layers, [layer(x=[n.node for n in  nodes], y=[n.incumbent_value for n in  nodes], color=[ name], Geom.line, Stat.step),
-                         layer(x=[n.node for n in  nodes], y=[n.bestbound       for n in  nodes], color=[ name], Geom.line, Stat.step)])
+        append!(layers, [layer(x=[n.node for n in nodes], y=[n.incumbent_value for n in nodes], color=[name], Geom.line, Stat.step),
+                         layer(x=[n.node for n in nodes], y=[n.bestbound       for n in nodes], color=[name], Geom.line, Stat.step)])
     end
     return plot(layers..., Guide.xlabel("Node number"), Guide.ylabel(""), Stat.step)
 end
@@ -77,7 +76,7 @@ function plot_progress(models::JuMP.Model...)
     node_layers = Any[]
     for (it,model) in enumerate(models)
         nodes = model.ext[:bbvis].nodes
-        name  = model.ext[:bbvis].name
+        name  = fill(model.ext[:bbvis].name, length(nodes))
         append!(node_layers, [layer(x=[n.node for n in nodes], y=[n.incumbent_value for n in nodes], color=[name], Stat.step, Geom.line),
                               layer(x=[n.node for n in nodes], y=[n.bestbound       for n in nodes], color=[name], Stat.step, Geom.line)])
     end
@@ -85,7 +84,7 @@ function plot_progress(models::JuMP.Model...)
     time_layers = Any[]
     for (it,model) in enumerate(models)
         nodes = model.ext[:bbvis].nodes
-        name  = model.ext[:bbvis].name
+        name  = fill(model.ext[:bbvis].name, length(nodes))
         append!(time_layers, [layer(x=[n.time for n in nodes], y=[n.incumbent_value for n in nodes], color=[name], Stat.step, Geom.line),
                               layer(x=[n.time for n in nodes], y=[n.bestbound       for n in nodes], color=[name], Stat.step, Geom.line)])
     end
@@ -96,18 +95,39 @@ end
 function plot_mip_gaps_compat(models::JuMP.Model...)
     max_nodes = 0
     for model in models
-        max_nodes = max(max_nodes, length(model.ext[:bbvis].nodes))
+        max_nodes = max(max_nodes, model.ext[:bbvis].nodes[end].node)
     end
-    plots = []
+    plots = Any[]
     for (it,model) in enumerate(models)
         nodes = model.ext[:bbvis].nodes
         name  = model.ext[:bbvis].name
+        # p = plot(layer(x=vcat([n.node for n in nodes],max_nodes), y=vcat([n.incumbent_value for n in nodes], nodes[end].incumbent_value), Stat.step, Geom.line),
+        #          layer(x=vcat([n.node for n in nodes],max_nodes), y=vcat([n.bestbound       for n in nodes], nodes[end].bestbound),       Stat.step, Geom.line),
+        #          Guide.xlabel("Node number"), Guide.ylabel(name), Stat.step)
         p = plot(layer(x=[n.node for n in nodes], y=[n.incumbent_value for n in nodes], Stat.step, Geom.line),
                  layer(x=[n.node for n in nodes], y=[n.bestbound       for n in nodes], Stat.step, Geom.line),
-                 Guide.xlabel("Node number"), Guide.ylabel(""), Stat.step, Scale.x_continuous(maxvalue=max_nodes))
+                 Guide.xlabel("Node number"), Guide.ylabel(name), Stat.step, Scale.x_continuous(maxvalue=max_nodes))
         push!(plots, p)
     end
     vstack(plots...)
 end
+
+function plot_times_compat(models::JuMP.Model...)
+    max_nodes = 0
+    for model in models
+        max_nodes = max(max_nodes, model.ext[:bbvis].nodes[end].node)
+    end
+    plots = Any[]
+    for (it,model) in enumerate(models)
+        nodes = model.ext[:bbvis].nodes
+        name  = model.ext[:bbvis].name
+        p = plot(layer(x=[n.time for n in nodes], y=[n.incumbent_value for n in nodes], Stat.step, Geom.line),
+                 layer(x=[n.time for n in nodes], y=[n.bestbound       for n in nodes], Stat.step, Geom.line),
+                 Guide.xlabel("Node number"), Guide.ylabel(name), Stat.step, Scale.x_continuous(maxvalue=max_nodes))
+        push!(plots, p)
+    end
+    vstack(plots...)
+end
+
 
 end
